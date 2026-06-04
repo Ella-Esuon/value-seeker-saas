@@ -1,0 +1,154 @@
+:root {
+  --vs-primary: #1a3a5c;
+  --vs-accent: #e8a020;
+  --vs-sidebar-width: 240px;
+}
+
+body { background: #f0f4f8; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+/* ── Sidebar ── */
+.vs-sidebar {
+  width: var(--vs-sidebar-width);
+  min-height: 100vh;
+  background: var(--vs-primary);
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+  transition: transform .25s;
+  display: flex;
+  flex-direction: column;
+}
+.vs-sidebar-brand {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  color: var(--vs-accent);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: .5px;
+}
+.vs-nav-link {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .65rem 1.25rem;
+  color: rgba(255,255,255,.7);
+  text-decoration: none;
+  font-size: .9rem;
+  transition: background .15s, color .15s;
+  border-left: 3px solid transparent;
+}
+.vs-nav-link:hover { background: rgba(255,255,255,.08); color: #fff; }
+.vs-nav-link.active { background: rgba(255,255,255,.12); color: #fff; border-left-color: var(--vs-accent); }
+.vs-nav-link i { font-size: 1.05rem; width: 20px; text-align: center; }
+
+/* ── Main layout ── */
+.vs-main { margin-left: var(--vs-sidebar-width); min-height: 100vh; }
+.vs-topbar {
+  background: white;
+  border-bottom: 1px solid #e5e9f0;
+  padding: .75rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.vs-content { padding: 1.5rem; }
+
+/* ── Stat Cards ── */
+.stat-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  transition: transform .15s, box-shadow .15s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+.stat-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+}
+.stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+.stat-label { font-size: .78rem; color: #6c757d; font-weight: 500; }
+
+/* ── Tables ── */
+.vs-table thead th {
+  background: var(--vs-primary);
+  color: white;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: .82rem;
+  padding: .65rem .9rem;
+}
+.vs-table tbody td { font-size: .85rem; vertical-align: middle; }
+.vs-table tbody tr:hover { background: #f4f8ff; }
+
+/* ── Contribution Grid ── */
+.contrib-grid-wrap { overflow-x: auto; }
+.contrib-grid { min-width: 1000px; font-size: .78rem; }
+.contrib-grid thead th {
+  background: var(--vs-primary); color: #fff;
+  padding: .5rem .5rem; text-align: center; white-space: nowrap;
+}
+.contrib-grid thead th:first-child { text-align: left; min-width: 140px; }
+.contrib-grid tfoot td {
+  font-weight: 700; padding: .45rem .5rem;
+  text-align: center; background: #eef2f8;
+  border-top: 2px solid var(--vs-primary);
+}
+.cell-paid {
+  background: #d4f0e0; color: #155724; font-weight: 700;
+  text-align: center; cursor: pointer; position: relative;
+  border-radius: 4px; padding: .35rem .3rem;
+}
+.cell-paid:hover { background: #b8e8cc; }
+.cell-paid .del-x {
+  display: none; position: absolute; top: -6px; right: -6px;
+  background: #e74c3c; color: #fff; border: none; border-radius: 50%;
+  width: 16px; height: 16px; font-size: 9px; cursor: pointer;
+  line-height: 16px; text-align: center;
+}
+.cell-paid:hover .del-x { display: block; }
+.cell-empty {
+  text-align: center; color: #ccc; cursor: pointer;
+  border-radius: 4px; padding: .35rem; font-size: 1.1rem;
+}
+.cell-empty:hover { background: #e8f0fb; color: var(--vs-primary); }
+.cell-total { background: #eaf3ff; font-weight: 700; text-align: center; color: var(--vs-primary); }
+.cell-cumul { background: #fff7e6; font-weight: 700; text-align: center; color: #7a4f00; }
+
+/* ── Loan card ── */
+.loan-card { border-radius: 10px; border: 1px solid #e0e6f0; background: #fff; margin-bottom: 1rem; }
+.loan-card-header { background: var(--vs-primary); color: #fff; border-radius: 10px 10px 0 0; padding: .75rem 1rem; }
+
+/* ── Status badges ── */
+.badge-active   { background:#d4edda; color:#155724; }
+.badge-paid     { background:#cce5ff; color:#004085; }
+.badge-pending  { background:#fff3cd; color:#856404; }
+.badge-rejected { background:#f8d7da; color:#721c24; }
+.badge-defaulted{ background:#f8d7da; color:#721c24; }
+
+/* ── Progress bar ── */
+.progress { height: 8px; border-radius: 8px; }
+
+/* ── Login page ── */
+.login-bg {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--vs-primary) 0%, #2d6a9f 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-card {
+  background: white; border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  width: 100%; max-width: 420px;
+  padding: 2.5rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .vs-sidebar { transform: translateX(-100%); }
+  .vs-sidebar.open { transform: translateX(0); }
+  .vs-main { margin-left: 0; }
+  .stat-value { font-size: 1.2rem; }
+}

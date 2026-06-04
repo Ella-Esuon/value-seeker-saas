@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VALUE SEEKER — Financial Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    :root {
+      --vs-primary: #1a3a5c;
+      --vs-accent:  #e8a020;
+      --vs-success: #27ae60;
+      --vs-danger:  #e74c3c;
+    }
+    body { background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background: var(--vs-primary) !important; }
+    .navbar-brand { font-weight: 700; font-size: 1.25rem; letter-spacing: 1px; color: var(--vs-accent) !important; }
+    .nav-link { color: rgba(255,255,255,.75) !important; padding: .4rem .75rem !important; border-radius: 6px; transition: background .15s; }
+    .nav-link:hover, .nav-link.active { background: rgba(255,255,255,.15); color: #fff !important; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* Stat cards */
+    .stat-card { border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .stat-value { font-size: 1.6rem; font-weight: 700; }
+
+    /* Contribution grid */
+    .grid-wrap { overflow-x: auto; }
+    #contrib-grid { min-width: 900px; font-size: .8rem; border-collapse: separate; border-spacing: 0; }
+    #contrib-grid thead th {
+      background: var(--vs-primary); color: #fff; white-space: nowrap;
+      padding: .45rem .55rem; text-align: center; position: sticky; top: 0;
+    }
+    #contrib-grid thead th:first-child { text-align: left; min-width: 150px; }
+    #contrib-grid tfoot td {
+      background: #1a3a5c15; font-weight: 700; padding: .45rem .55rem; text-align: center;
+      border-top: 2px solid var(--vs-primary);
+    }
+    #contrib-grid tfoot td:first-child { text-align: left; }
+    #contrib-grid tbody tr:hover { background: #f4f8ff; }
+    #contrib-grid tbody td { padding: .38rem .45rem; border-bottom: 1px solid #e8ecf0; vertical-align: middle; }
+    #contrib-grid tbody td:first-child { font-weight: 600; white-space: nowrap; }
+
+    .cell-paid {
+      background: #d4f0e0; color: #155724; font-weight: 700;
+      text-align: center; border-radius: 4px; cursor: pointer; position: relative;
+    }
+    .cell-paid:hover { background: #b8e8cc; }
+    .cell-paid .del-btn {
+      display: none; position: absolute; top: -5px; right: -5px;
+      background: var(--vs-danger); color: #fff; border: none;
+      border-radius: 50%; width: 16px; height: 16px; font-size: 10px;
+      line-height: 16px; text-align: center; cursor: pointer; z-index: 1;
+    }
+    .cell-paid:hover .del-btn { display: block; }
+    .cell-empty {
+      text-align: center; color: #bbb; cursor: pointer; border-radius: 4px;
+      font-size: 1.1rem; transition: background .15s, color .15s;
+    }
+    .cell-empty:hover { background: #e8f0fb; color: var(--vs-primary); }
+    .cell-total { background: #eaf3ff; font-weight: 700; text-align: center; color: var(--vs-primary); }
+    .cell-cumul { background: #fff7e6; font-weight: 700; text-align: center; color: #7a5000; }
+    .col-total-paid { color: var(--vs-success); }
+    .col-total-empty { color: #aaa; }
+
+    /* Loans */
+    .loan-card { border-radius: 10px; border: 1px solid #dde; background: white; margin-bottom: 1rem; }
+    .loan-card-header { background: var(--vs-primary); color: white; border-radius: 10px 10px 0 0; padding: .75rem 1rem; }
+    .badge-active   { background: #d4edda; color: #155724; }
+    .badge-paid     { background: #cce5ff; color: #004085; }
+    .badge-defaulted{ background: #f8d7da; color: #721c24; }
+    .progress { height: 10px; border-radius: 10px; }
+
+    /* Tables */
+    .table th { background: var(--vs-primary); color: white; white-space: nowrap; }
+    .btn-primary  { background: var(--vs-primary); border-color: var(--vs-primary); }
+    .btn-primary:hover { background: #122840; border-color: #122840; }
+    .btn-accent   { background: var(--vs-accent); border-color: var(--vs-accent); color: white; }
+    .btn-accent:hover { background: #c8881a; color: white; }
+    .year-nav .btn { min-width: 110px; }
+
+    /* Toast */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark sticky-top px-3 py-2">
+  <span class="navbar-brand"><i class="bi bi-gem me-2"></i>VALUE SEEKER</span>
+  <div class="d-flex gap-1 flex-wrap">
+    <a href="#" class="nav-link active" onclick="showSection('dashboard',this)">
+      <i class="bi bi-speedometer2 me-1"></i>Dashboard
+    </a>
+    <a href="#" class="nav-link" onclick="showSection('members',this)">
+      <i class="bi bi-people me-1"></i>Members
+    </a>
+    <a href="#" class="nav-link" onclick="showSection('contributions',this)">
+      <i class="bi bi-piggy-bank me-1"></i>Contributions
+    </a>
+    <a href="#" class="nav-link" onclick="showSection('loans',this)">
+      <i class="bi bi-cash-coin me-1"></i>Loans
+    </a>
+  </div>
+</nav>
+
+<div class="container-fluid py-4 px-3 px-md-4">
+
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <div id="section-dashboard" class="section active">
+    <h4 class="fw-bold mb-4">Financial Overview</h4>
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card card p-3 h-100" style="border-left:5px solid var(--vs-primary)">
+          <div class="text-muted small">Total Members</div>
+          <div class="stat-value text-primary" id="stat-members">—</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card card p-3 h-100" style="border-left:5px solid var(--vs-success)">
+          <div class="text-muted small">Total Contributions</div>
+          <div class="stat-value text-success" id="stat-contributions">—</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card card p-3 h-100" style="border-left:5px solid var(--vs-accent)">
+          <div class="text-muted small">Active Loans</div>
+          <div class="stat-value" style="color:var(--vs-accent)" id="stat-active-loans">—</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card card p-3 h-100" style="border-left:5px solid var(--vs-danger)">
+          <div class="text-muted small">Outstanding Balance</div>
+          <div class="stat-value text-danger" id="stat-balance">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+        <span>Member Summary</span>
+        <button class="btn btn-primary btn-sm" onclick="showSection('members', document.querySelector('.nav-link:nth-child(2)')); openAddMember()">
+          <i class="bi bi-plus-lg me-1"></i>Add New Member
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Member</th><th>Joined</th><th>All-time Contributions</th><th>Active Loan Balance</th></tr></thead>
+          <tbody id="dash-table"><tr><td colspan="4" class="text-center text-muted py-3">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MEMBERS ═══════════ -->
+  <div id="section-members" class="section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="fw-bold mb-0">Members</h4>
+      <button class="btn btn-primary" onclick="openAddMember()">
+        <i class="bi bi-person-plus-fill me-1"></i>Add New Member
+      </button>
+    </div>
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>#</th><th>Name</th><th>Phone</th><th>Date Joined</th><th>Contributions (KES)</th><th>Loan Balance (KES)</th><th></th></tr>
+          </thead>
+          <tbody id="members-table"><tr><td colspan="7" class="text-center text-muted py-3">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CONTRIBUTIONS GRID ═══════════ -->
+  <div id="section-contributions" class="section">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h4 class="fw-bold mb-0">Monthly Contributions</h4>
+      <button class="btn btn-primary" onclick="openAddContribution()">
+        <i class="bi bi-plus-lg me-1"></i>Record Contribution
+      </button>
+    </div>
+
+    <!-- Year navigator -->
+    <div class="card border-0 shadow-sm mb-3 p-3">
+      <div class="d-flex align-items-center gap-3 year-nav flex-wrap">
+        <button class="btn btn-outline-primary btn-sm" onclick="changeYear(-1)">
+          <i class="bi bi-chevron-left"></i> Prev Year
+        </button>
+        <h5 class="mb-0 fw-bold px-2" id="grid-year-label">—</h5>
+        <button class="btn btn-outline-primary btn-sm" onclick="changeYear(1)">
+          Next Year <i class="bi bi-chevron-right"></i>
+        </button>
+        <span class="ms-auto text-muted small" id="grid-year-subtitle"></span>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="card border-0 shadow-sm">
+      <div class="grid-wrap">
+        <table id="contrib-grid">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th>
+              <th>May</th><th>Jun</th><th>Jul</th><th>Aug</th>
+              <th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+              <th style="background:#1a3a5c;color:var(--vs-accent)">Year Total</th>
+              <th style="background:#7a5000;color:#ffe4b0">All-time</th>
+            </tr>
+          </thead>
+          <tbody id="contrib-grid-body"></tbody>
+          <tfoot id="contrib-grid-foot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ LOANS ═══════════ -->
+  <div id="section-loans" class="section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="fw-bold mb-0">Loans</h4>
+      <button class="btn btn-primary" onclick="openAddLoan()">
+        <i class="bi bi-plus-lg me-1"></i>Issue Loan
+      </button>
+    </div>
+    <div class="card border-0 shadow-sm mb-3 p-3">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <select class="form-select" id="filter-loan-member" onchange="loadLoans()">
+            <option value="">All Members</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" id="filter-loan-status" onchange="loadLoans()">
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="paid">Paid</option>
+            <option value="defaulted">Defaulted</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="loans-container"></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast-container">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add / Edit Member ── -->
+<div class="modal fade" id="modalMember" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header" style="background:var(--vs-primary);color:white">
+      <h5 class="modal-title" id="memberModalTitle">Add New Member</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="member-id" />
+      <div class="mb-3"><label class="form-label fw-semibold">Full Name *</label>
+        <input type="text" class="form-control" id="member-name" placeholder="e.g. John Doe" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Phone</label>
+        <input type="text" class="form-control" id="member-phone" placeholder="e.g. 0241234567" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Email</label>
+        <input type="email" class="form-control" id="member-email" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Date Joined *</label>
+        <input type="date" class="form-control" id="member-date" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMember()"><i class="bi bi-check-lg me-1"></i>Save Member</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ── MODAL: Record Contribution ── -->
+<div class="modal fade" id="modalContribution" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header" style="background:var(--vs-primary);color:white">
+      <h5 class="modal-title">Record Contribution</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-3"><label class="form-label fw-semibold">Member *</label>
+        <select class="form-select" id="contrib-member-id" required></select></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label fw-semibold">Month *</label>
+          <select class="form-select" id="contrib-month">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select></div>
+        <div class="col-6 mb-3"><label class="form-label fw-semibold">Year *</label>
+          <input type="number" class="form-control" id="contrib-year" min="2000" max="2100" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label fw-semibold">Amount (KES) *</label>
+        <input type="number" class="form-control" id="contrib-amount" min="0" step="0.01" placeholder="5000" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Date Paid *</label>
+        <input type="date" class="form-control" id="contrib-date" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Notes</label>
+        <input type="text" class="form-control" id="contrib-notes" placeholder="Optional" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContribution()"><i class="bi bi-check-lg me-1"></i>Save</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ── MODAL: Issue Loan ── -->
+<div class="modal fade" id="modalLoan" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header" style="background:var(--vs-primary);color:white">
+      <h5 class="modal-title">Issue Loan</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-3"><label class="form-label fw-semibold">Member *</label>
+        <select class="form-select" id="loan-member-id" required></select></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Principal Amount (KES) *</label>
+        <input type="number" class="form-control" id="loan-principal" min="0" step="0.01" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Interest Rate (%)</label>
+        <input type="number" class="form-control" id="loan-interest" min="0" step="0.01" value="0" />
+        <small class="text-muted">Flat rate applied on principal</small></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Date Issued *</label>
+        <input type="date" class="form-control" id="loan-date-issued" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Due Date</label>
+        <input type="date" class="form-control" id="loan-due-date" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Notes</label>
+        <input type="text" class="form-control" id="loan-notes" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLoan()">Issue Loan</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ── MODAL: Add Repayment ── -->
+<div class="modal fade" id="modalRepayment" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header" style="background:var(--vs-success);color:white">
+      <h5 class="modal-title">Record Repayment</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="repayment-loan-id" />
+      <p class="text-muted small mb-3" id="repayment-loan-info"></p>
+      <div class="mb-3"><label class="form-label fw-semibold">Amount (KES) *</label>
+        <input type="number" class="form-control" id="repayment-amount" min="0" step="0.01" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Date Paid *</label>
+        <input type="date" class="form-control" id="repayment-date" /></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Notes</label>
+        <input type="text" class="form-control" id="repayment-notes" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button class="btn btn-success" onclick="saveRepayment()">Record Payment</button>
+    </div>
+  </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ─── Helpers ────────────────────────────────────────────────────────────────
+const fmt   = n => Number(n||0).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = () => new Date().toISOString().split('T')[0];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_FULL  = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.className = `toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
+  document.getElementById('toast-msg').textContent = msg;
+  bootstrap.Toast.getOrCreateInstance(el, {delay:3000}).show();
+}
+
+async function api(method, url, body) {
+  const opts = {method, headers:{'Content-Type':'application/json'}};
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (!r.ok) { const e = await r.json(); throw new Error(e.detail||'Error'); }
+  return r.json();
+}
+
+function showSection(name, link) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-'+name).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  if (link) link.classList.add('active');
+  if (name==='dashboard')     loadDashboard();
+  if (name==='members')       loadMembers();
+  if (name==='contributions') { loadMembersCache().then(loadContributionGrid); }
+  if (name==='loans')         { loadMembersCache().then(() => { populateLoanDropdowns(); loadLoans(); }); }
+}
+
+// ─── Members cache ──────────────────────────────────────────────────────────
+let allMembers = [];
+async function loadMembersCache() {
+  allMembers = await api('GET','/api/members/');
+}
+
+// ─── Dashboard ──────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const [dash, members] = await Promise.all([
+    api('GET','/api/dashboard'),
+    api('GET','/api/members/'),
+  ]);
+  allMembers = members;
+  document.getElementById('stat-members').textContent      = dash.total_members;
+  document.getElementById('stat-contributions').textContent = `KES ${fmt(dash.total_contributions)}`;
+  document.getElementById('stat-active-loans').textContent  = dash.active_loans_count;
+  document.getElementById('stat-balance').textContent       = `KES ${fmt(dash.active_loan_balance)}`;
+
+  const tbody = document.getElementById('dash-table');
+  if (!members.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No members yet — add your first member above</td></tr>';
+    return;
+  }
+  tbody.innerHTML = members.map(m => `
+    <tr>
+      <td><strong>${m.name}</strong></td>
+      <td class="text-muted">${m.date_joined}</td>
+      <td class="text-success fw-bold">KES ${fmt(m.total_contributions)}</td>
+      <td class="${m.active_loan_balance>0?'text-danger fw-bold':'text-muted'}">KES ${fmt(m.active_loan_balance)}</td>
+    </tr>`).join('');
+}
+
+// ─── Members ────────────────────────────────────────────────────────────────
+async function loadMembers() {
+  allMembers = await api('GET','/api/members/');
+  const tbody = document.getElementById('members-table');
+  if (!allMembers.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No members yet. Click "Add New Member" to get started.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = allMembers.map((m,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${m.name}</strong></td>
+      <td>${m.phone||'—'}</td>
+      <td>${m.date_joined}</td>
+      <td class="text-success fw-bold">KES ${fmt(m.total_contributions)}</td>
+      <td class="${m.active_loan_balance>0?'text-danger fw-bold':'text-muted'}">KES ${fmt(m.active_loan_balance)}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditMember(${m.id})"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteMember(${m.id},'${m.name.replace(/'/g,"\\'")}')"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function openAddMember() {
+  document.getElementById('memberModalTitle').textContent = 'Add New Member';
+  document.getElementById('member-id').value    = '';
+  document.getElementById('member-name').value  = '';
+  document.getElementById('member-phone').value = '';
+  document.getElementById('member-email').value = '';
+  document.getElementById('member-date').value  = today();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMember')).show();
+}
+
+function openEditMember(id) {
+  const m = allMembers.find(x=>x.id===id);
+  if (!m) return;
+  document.getElementById('memberModalTitle').textContent = 'Edit Member';
+  document.getElementById('member-id').value    = m.id;
+  document.getElementById('member-name').value  = m.name;
+  document.getElementById('member-phone').value = m.phone||'';
+  document.getElementById('member-email').value = m.email||'';
+  document.getElementById('member-date').value  = m.date_joined;
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMember')).show();
+}
+
+async function saveMember() {
+  const id   = document.getElementById('member-id').value;
+  const name = document.getElementById('member-name').value.trim();
+  const date_joined = document.getElementById('member-date').value;
+  if (!name || !date_joined) { alert('Name and Date Joined are required'); return; }
+  const body = {
+    name,
+    phone: document.getElementById('member-phone').value.trim()||null,
+    email: document.getElementById('member-email').value.trim()||null,
+    date_joined,
+  };
+  try {
+    if (id) await api('PUT',`/api/members/${id}`,{name:body.name,phone:body.phone,email:body.email});
+    else     await api('POST','/api/members/',body);
+    bootstrap.Modal.getInstance(document.getElementById('modalMember')).hide();
+    toast(id?'Member updated':'Member added successfully');
+    loadMembers(); loadDashboard();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteMember(id, name) {
+  if (!confirm(`Delete "${name}"? All contributions and loans will also be removed.`)) return;
+  try {
+    await api('DELETE',`/api/members/${id}`);
+    toast('Member deleted'); loadMembers(); loadDashboard();
+    if (document.getElementById('section-contributions').classList.contains('active')) loadContributionGrid();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── Contribution Grid ──────────────────────────────────────────────────────
+let currentGridYear = new Date().getFullYear();
+
+function changeYear(delta) {
+  currentGridYear += delta;
+  loadContributionGrid();
+}
+
+async function loadContributionGrid() {
+  document.getElementById('grid-year-label').textContent = currentGridYear;
+  const data = await api('GET', `/api/contributions/yearly-grid?year=${currentGridYear}`);
+  renderGrid(data);
+}
+
+function renderGrid(data) {
+  const tbody = document.getElementById('contrib-grid-body');
+  const tfoot = document.getElementById('contrib-grid-foot');
+
+  // Year range hint
+  document.getElementById('grid-year-subtitle').textContent =
+    `${data.members.length} member${data.members.length!==1?'s':''} · Year total: KES ${fmt(data.grand_year_total)}`;
+
+  if (!data.members.length) {
+    tbody.innerHTML = `<tr><td colspan="15" class="text-center text-muted py-4">No members yet</td></tr>`;
+    tfoot.innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = data.members.map(row => {
+    const cells = Array.from({length:12},(_,i)=>{
+      const m = i+1;
+      const paid = row.months[m];
+      if (paid) {
+        // paid: show amount, hover reveals delete
+        const idsJson = JSON.stringify(paid.ids).replace(/"/g,'&quot;');
+        return `<td class="cell-paid" title="KES ${fmt(paid.amount)} — click × to delete">
+          <div style="position:relative;display:inline-block;width:100%">
+            <span>KES ${fmt(paid.amount)}</span>
+            ${paid.ids.map(id=>`<button class="del-btn" onclick="deleteContrib(event,${id})" title="Delete">×</button>`).join('')}
+          </div>
+        </td>`;
+      }
+      return `<td class="cell-empty" onclick="openAddContribution(${row.member_id},${m},${currentGridYear})" title="Record ${MONTH_FULL[i]} ${currentGridYear} for ${row.member_name}">+</td>`;
+    }).join('');
+
+    return `<tr>
+      <td>${row.member_name}</td>
+      ${cells}
+      <td class="cell-total">KES ${fmt(row.year_total)}</td>
+      <td class="cell-cumul">KES ${fmt(row.cumulative_total)}</td>
+    </tr>`;
+  }).join('');
+
+  // Footer totals row
+  const footCells = Array.from({length:12},(_,i)=>{
+    const m   = i+1;
+    const val = data.col_totals[String(m)] || 0;
+    return val>0
+      ? `<td class="col-total-paid fw-bold text-center">KES ${fmt(val)}</td>`
+      : `<td class="col-total-empty text-center">—</td>`;
+  }).join('');
+
+  tfoot.innerHTML = `<tr>
+    <td>TOTAL</td>
+    ${footCells}
+    <td class="cell-total">KES ${fmt(data.grand_year_total)}</td>
+    <td class="cell-cumul">KES ${fmt(data.grand_cumulative)}</td>
+  </tr>`;
+}
+
+async function deleteContrib(event, id) {
+  event.stopPropagation();
+  if (!confirm('Delete this contribution record?')) return;
+  try {
+    await api('DELETE',`/api/contributions/${id}`);
+    toast('Contribution deleted');
+    loadContributionGrid(); loadDashboard();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── Contribution modal ──────────────────────────────────────────────────────
+function openAddContribution(memberId, month, year) {
+  if (!allMembers.length) { toast('Add at least one member first','error'); return; }
+
+  // Populate member dropdown
+  const sel = document.getElementById('contrib-member-id');
+  sel.innerHTML = '<option value="">— Select Member —</option>';
+  allMembers.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id; opt.textContent = m.name;
+    sel.appendChild(opt);
+  });
+
+  // Pre-fill if called from grid cell
+  sel.value = memberId || '';
+  document.getElementById('contrib-month').value  = month  || (new Date().getMonth()+1);
+  document.getElementById('contrib-year').value   = year   || currentGridYear;
+  document.getElementById('contrib-amount').value = '';
+  document.getElementById('contrib-date').value   = today();
+  document.getElementById('contrib-notes').value  = '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalContribution')).show();
+}
+
+async function saveContribution() {
+  const body = {
+    member_id: parseInt(document.getElementById('contrib-member-id').value),
+    month:     parseInt(document.getElementById('contrib-month').value),
+    year:      parseInt(document.getElementById('contrib-year').value),
+    amount:    parseFloat(document.getElementById('contrib-amount').value),
+    date_paid: document.getElementById('contrib-date').value,
+    notes:     document.getElementById('contrib-notes').value.trim()||null,
+  };
+  if (!body.member_id||!body.amount||!body.date_paid) { alert('Please fill all required fields'); return; }
+  try {
+    await api('POST','/api/contributions/',body);
+    bootstrap.Modal.getInstance(document.getElementById('modalContribution')).hide();
+    toast('Contribution recorded');
+    // If the recorded year differs from grid year, switch to it
+    if (body.year !== currentGridYear) { currentGridYear = body.year; }
+    loadContributionGrid(); loadDashboard(); loadMembersCache();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── Loans ──────────────────────────────────────────────────────────────────
+let allLoans = [];
+
+function populateLoanDropdowns() {
+  ['filter-loan-member','loan-member-id'].forEach(sid => {
+    const sel = document.getElementById(sid);
+    const cur = sel.value;
+    const isFilter = sid.startsWith('filter');
+    sel.innerHTML = isFilter ? '<option value="">All Members</option>' : '<option value="">— Select Member —</option>';
+    allMembers.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id; opt.textContent = m.name;
+      sel.appendChild(opt);
+    });
+    if (cur) sel.value = cur;
+  });
+}
+
+async function loadLoans() {
+  const memberId = document.getElementById('filter-loan-member').value;
+  const status   = document.getElementById('filter-loan-status').value;
+  let url = '/api/loans/?';
+  if (memberId) url += `member_id=${memberId}&`;
+  if (status)   url += `status=${status}&`;
+  allLoans = await api('GET',url);
+  const container = document.getElementById('loans-container');
+  if (!allLoans.length) {
+    container.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No loans found</div>';
+    return;
+  }
+  container.innerHTML = allLoans.map(loanCard).join('');
+}
+
+function statusBadge(s) {
+  const map = {active:'badge-active',paid:'badge-paid',defaulted:'badge-defaulted'};
+  return `<span class="badge ${map[s]||''} px-2 py-1 rounded">${s.toUpperCase()}</span>`;
+}
+
+function loanCard(l) {
+  const pct = l.total_due>0 ? Math.min(100,(l.total_repaid/l.total_due)*100) : 0;
+  const bar = l.status==='paid'?'bg-success':l.status==='defaulted'?'bg-danger':'bg-warning';
+  const repHtml = l.repayments.length ? l.repayments.map(r=>`
+    <tr style="background:#f9f9f9">
+      <td colspan="2" class="ps-4 text-muted small"><i class="bi bi-arrow-return-right me-1"></i>${r.date_paid}</td>
+      <td class="text-success small">+ KES ${fmt(r.amount)}</td>
+      <td class="small">${r.notes||''}</td>
+      <td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteRepayment(${l.id},${r.id})"><i class="bi bi-x"></i></button></td>
+    </tr>`).join('') : '';
+
+  return `<div class="loan-card">
+    <div class="loan-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div><strong>${l.member_name}</strong> &nbsp;·&nbsp; Loan #${l.id}</div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        ${statusBadge(l.status)}
+        ${l.status==='active'?`<button class="btn btn-sm btn-accent" onclick="openAddRepayment(${l.id})"><i class="bi bi-plus me-1"></i>Repayment</button>`:''}
+        <button class="btn btn-sm btn-outline-light" onclick="deleteLoan(${l.id})"><i class="bi bi-trash"></i></button>
+      </div>
+    </div>
+    <div class="p-3">
+      <div class="row g-2 mb-3 text-center">
+        <div class="col-6 col-md-3"><small class="text-muted d-block">Principal</small><strong>KES ${fmt(l.principal)}</strong></div>
+        <div class="col-6 col-md-3"><small class="text-muted d-block">Interest (${l.interest_rate}%)</small><strong>KES ${fmt(l.interest_amount)}</strong></div>
+        <div class="col-6 col-md-3"><small class="text-muted d-block">Total Due</small><strong>KES ${fmt(l.total_due)}</strong></div>
+        <div class="col-6 col-md-3"><small class="text-muted d-block">Balance</small><strong class="${l.balance>0?'text-danger':'text-success'}">KES ${fmt(l.balance)}</strong></div>
+      </div>
+      <div class="mb-2">
+        <div class="d-flex justify-content-between small text-muted mb-1">
+          <span>Repaid: KES ${fmt(l.total_repaid)}</span><span>${pct.toFixed(1)}% paid</span>
+        </div>
+        <div class="progress"><div class="progress-bar ${bar}" style="width:${pct}%"></div></div>
+      </div>
+      <div class="small text-muted mt-2">Issued: ${l.date_issued}${l.due_date?' · Due: '+l.due_date:''}${l.notes?' · '+l.notes:''}</div>
+      ${l.repayments.length ? `
+      <div class="table-responsive mt-2">
+        <table class="table table-sm mb-0" style="font-size:.82rem">
+          <thead><tr><th colspan="2">Date</th><th>Amount</th><th>Notes</th><th></th></tr></thead>
+          <tbody>${repHtml}</tbody>
+        </table>
+      </div>` : '<p class="text-muted small mt-2 mb-0">No repayments yet.</p>'}
+    </div>
+  </div>`;
+}
+
+function openAddLoan() {
+  if (!allMembers.length) { toast('Add at least one member first','error'); return; }
+  populateLoanDropdowns();
+  document.getElementById('loan-member-id').value    = '';
+  document.getElementById('loan-principal').value    = '';
+  document.getElementById('loan-interest').value     = '0';
+  document.getElementById('loan-date-issued').value  = today();
+  document.getElementById('loan-due-date').value     = '';
+  document.getElementById('loan-notes').value        = '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalLoan')).show();
+}
+
+async function saveLoan() {
+  const body = {
+    member_id:   parseInt(document.getElementById('loan-member-id').value),
+    principal:   parseFloat(document.getElementById('loan-principal').value),
+    interest_rate: parseFloat(document.getElementById('loan-interest').value)||0,
+    date_issued: document.getElementById('loan-date-issued').value,
+    due_date:    document.getElementById('loan-due-date').value||null,
+    notes:       document.getElementById('loan-notes').value.trim()||null,
+  };
+  if (!body.member_id||!body.principal||!body.date_issued) { alert('Please fill all required fields'); return; }
+  try {
+    await api('POST','/api/loans/',body);
+    bootstrap.Modal.getInstance(document.getElementById('modalLoan')).hide();
+    toast('Loan issued'); loadLoans(); loadDashboard(); loadMembersCache();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function openAddRepayment(loanId) {
+  const l = allLoans.find(x=>x.id===loanId);
+  document.getElementById('repayment-loan-id').value = loanId;
+  document.getElementById('repayment-loan-info').textContent =
+    `${l?.member_name} · Balance: KES ${fmt(l?.balance)}`;
+  document.getElementById('repayment-amount').value = '';
+  document.getElementById('repayment-date').value   = today();
+  document.getElementById('repayment-notes').value  = '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRepayment')).show();
+}
+
+async function saveRepayment() {
+  const loanId = document.getElementById('repayment-loan-id').value;
+  const body = {
+    amount:   parseFloat(document.getElementById('repayment-amount').value),
+    date_paid: document.getElementById('repayment-date').value,
+    notes:    document.getElementById('repayment-notes').value.trim()||null,
+  };
+  if (!body.amount||!body.date_paid) { alert('Amount and date are required'); return; }
+  try {
+    await api('POST',`/api/loans/${loanId}/repayments`,body);
+    bootstrap.Modal.getInstance(document.getElementById('modalRepayment')).hide();
+    toast('Repayment recorded'); loadLoans(); loadDashboard(); loadMembersCache();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteRepayment(loanId, repId) {
+  if (!confirm('Delete this repayment?')) return;
+  try {
+    await api('DELETE',`/api/loans/${loanId}/repayments/${repId}`);
+    toast('Repayment deleted'); loadLoans(); loadDashboard();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteLoan(id) {
+  if (!confirm('Delete this loan and all its repayments?')) return;
+  try {
+    await api('DELETE',`/api/loans/${id}`);
+    toast('Loan deleted'); loadLoans(); loadDashboard(); loadMembersCache();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+(async () => {
+  await loadDashboard();
+  await loadMembers();
+})();
+</script>
+</body>
+</html>
