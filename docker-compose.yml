@@ -18,6 +18,8 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://vsadmin:Vs%40Secure2026@db:5432/valueseeker
+    ports:
+      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy

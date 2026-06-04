@@ -17,9 +17,9 @@ def run_migrations():
         conn.commit()
 
         conn.execute(text("""
-            INSERT INTO tenants (name, slug)
-            VALUES ('Default Group', 'default')
-            ON CONFLICT (slug) DO NOTHING
+            INSERT INTO tenants (name, slug, is_active)
+            VALUES ('Default Group', 'default', TRUE)
+            ON CONFLICT (slug) DO UPDATE SET is_active = TRUE
         """))
         conn.commit()
 
