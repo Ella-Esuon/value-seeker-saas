@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+
 from .. import models
 from ..auth import hash_password, verify_password, create_access_token, get_current_user
 from ..database import get_db
+from ..core.logging import log_login_attempt
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -35,7 +37,9 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             models.User.is_superadmin == True,
         ).first()
         if not user or not verify_password(req.password, user.hashed_password):
+            log_login_attempt(req.username, req.group_code, success=False, reason="invalid_credentials")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        log_login_attempt(req.username, req.group_code, success=True)
         token = create_access_token({"sub": user.username, "tid": None})
         return TokenResponse(
             access_token=token, token_type="bearer",
@@ -49,6 +53,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         models.Tenant.is_active == True,
     ).first()
     if not tenant:
+        log_login_attempt(req.username, req.group_code, success=False, reason="unknown_group")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown or inactive group code")
 
     user = db.query(models.User).filter(
@@ -57,8 +62,10 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         models.User.is_active == True,
     ).first()
     if not user or not verify_password(req.password, user.hashed_password):
+        log_login_attempt(req.username, req.group_code, success=False, reason="invalid_credentials")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    log_login_attempt(req.username, req.group_code, success=True)
     token = create_access_token({"sub": user.username, "tid": tenant.id})
     return TokenResponse(
         access_token=token, token_type="bearer",

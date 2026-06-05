@@ -1,11 +1,12 @@
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from .database import Base, engine, SessionLocal
 from . import models
 from .auth import hash_password
 from .migrations import run_migrations
 from .routers import auth, members, contributions, loans, dashboard, reports, tenants
+from .core.config import settings
 
 Base.metadata.create_all(bind=engine)
 run_migrations()
@@ -31,17 +32,16 @@ app.include_router(tenants.router)
 
 @app.on_event("startup")
 def seed():
-    admin_user = os.getenv("ADMIN_USERNAME", "admin")
-    admin_pass = os.getenv("ADMIN_PASSWORD", "ad123")
-    sa_pass = os.getenv("SUPERADMIN_PASSWORD", "super123")
+    admin_user = settings.ADMIN_USERNAME
+    admin_pass = settings.ADMIN_PASSWORD
+    sa_pass    = settings.SUPERADMIN_PASSWORD
 
-    print(f"[seed] ADMIN_USERNAME      = {admin_user}")
-    print(f"[seed] len(ADMIN_PASSWORD) = {len(admin_pass)}")
+    print(f"[seed] ADMIN_USERNAME           = {admin_user}")
+    print(f"[seed] len(ADMIN_PASSWORD)      = {len(admin_pass)}")
     print(f"[seed] len(SUPERADMIN_PASSWORD) = {len(sa_pass)}")
 
     db = SessionLocal()
     try:
-        # Ensure default tenant exists
         tenant = db.query(models.Tenant).filter_by(slug="default").first()
         if not tenant:
             tenant = models.Tenant(name="Default Group", slug="default", is_active=True)
@@ -55,7 +55,6 @@ def seed():
             else:
                 print(f"[seed] Default tenant already exists (id={tenant.id})")
 
-        # Seed tenant admin — only if not already present
         exists = db.query(models.User).filter_by(username=admin_user, tenant_id=tenant.id).first()
         if not exists:
             db.add(models.User(
@@ -70,7 +69,6 @@ def seed():
         else:
             print(f"[seed] Admin user '{admin_user}' already exists — skipping")
 
-        # Seed superadmin (no tenant) — only if not already present
         sa = db.query(models.User).filter_by(is_superadmin=True).first()
         if not sa:
             db.add(models.User(
