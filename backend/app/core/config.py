@@ -12,5 +12,14 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "ad123"
     SUPERADMIN_PASSWORD: str = "super123"
 
+    # Email / password-reset settings
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    EMAIL_FROM: str = "noreply@valueseeker.com"
+    FRONTEND_URL: str = "http://localhost:3000"
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 30
+
 
 settings = Settings()

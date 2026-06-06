@@ -5,7 +5,7 @@ from .database import Base, engine, SessionLocal
 from . import models
 from .auth import hash_password
 from .migrations import run_migrations
-from .routers import auth, members, contributions, loans, dashboard, reports, tenants
+from .routers import auth, members, contributions, loans, dashboard, reports, tenants, password, user_profile
 from .core.config import settings
 
 Base.metadata.create_all(bind=engine)
@@ -28,6 +28,8 @@ app.include_router(loans.router)
 app.include_router(dashboard.router)
 app.include_router(reports.router)
 app.include_router(tenants.router)
+app.include_router(password.router)
+app.include_router(user_profile.router)
 
 
 @app.on_event("startup")

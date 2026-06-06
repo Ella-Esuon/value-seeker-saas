@@ -25,6 +25,7 @@ class User(Base):
     id              = Column(Integer, primary_key=True, index=True)
     tenant_id       = Column(Integer, ForeignKey("tenants.id"), nullable=True)
     username        = Column(String, nullable=False)
+    full_name       = Column(String, nullable=True)
     email           = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     is_active       = Column(Boolean, default=True)

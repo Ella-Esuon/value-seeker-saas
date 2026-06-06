@@ -105,6 +105,12 @@ def run_migrations():
         """))
         conn.commit()
 
+        # ── users: full_name column (profile feature) ────────────────────────
+        conn.execute(text("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR
+        """))
+        conn.commit()
+
         # ── add scoped unique constraints (idempotent) ───────────────────────
         conn.execute(text("""
             DO $$ BEGIN
