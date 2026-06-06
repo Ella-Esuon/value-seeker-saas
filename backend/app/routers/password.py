@@ -10,10 +10,12 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from .. import models
-from ..auth import get_current_user, require_admin
 from ..core.config import settings
 from ..core.logging import log_admin_action
-from ..core.security import create_access_token, decode_token, hash_password, verify_password
+from ..core.security import (
+    create_access_token, decode_token, hash_password, verify_password,
+    get_current_user, require_admin,
+)
 from ..database import get_db
 from ..services.email_service import email_service
 

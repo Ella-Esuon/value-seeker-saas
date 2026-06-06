@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .. import models
-from ..auth import get_current_user
+from ..core.security import get_current_user
 from ..core.logging import log_admin_action
 from ..database import get_db
 

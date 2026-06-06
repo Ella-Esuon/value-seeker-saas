@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine, SessionLocal
 from . import models
-from .auth import hash_password
+from .core.security import hash_password
 from .migrations import run_migrations
 from .routers import auth, members, contributions, loans, dashboard, reports, tenants, password, user_profile
 from .core.config import settings
